@@ -15,7 +15,10 @@ export async function editEvent(conversation: MyConversation, ctx: MyConversatio
   const collected = await collectEventFields(conversation, ctx, {
     title: existing.title,
     dateIso: existing.event_date,
-    dateDisplay: existing.event_date ? formatDisplay(new Date(existing.event_date)) : existing.event_date_text,
+    dateDisplay: existing.event_date
+      ? formatDisplay(new Date(existing.event_date), Boolean(existing.event_has_time))
+      : existing.event_date_text,
+    dateHasTime: Boolean(existing.event_has_time),
     location: existing.location,
     description: existing.description,
   });
@@ -29,6 +32,7 @@ export async function editEvent(conversation: MyConversation, ctx: MyConversatio
     title: collected.title,
     event_date: collected.dateIso,
     event_date_text: collected.dateIso ? null : collected.dateDisplay,
+    event_has_time: collected.dateIso ? collected.dateHasTime : false,
     location: collected.location,
     description: collected.description,
   });

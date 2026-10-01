@@ -5,7 +5,7 @@ import { atMidnight } from "./dateRange";
 export function formatEventLine(e: EventRecord, position: number, now = new Date()): string {
   const expired = e.event_date !== null && new Date(e.event_date) < atMidnight(now);
   const when = e.event_date
-    ? formatDisplay(new Date(e.event_date)) + (expired ? " (passed)" : "")
+    ? formatDisplay(new Date(e.event_date), Boolean(e.event_has_time)) + (expired ? " (passed)" : "")
     : e.event_date_text
     ? `(unclear date: "${e.event_date_text}")`
     : "(no date set)";

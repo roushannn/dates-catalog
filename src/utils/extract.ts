@@ -7,6 +7,7 @@ export interface ExtractedEvent {
   description: string | null;
   dateIso: string | null;
   dateDisplay: string | null;
+  dateHasTime: boolean;
 }
 
 // 📍 rarely has a colon after it ("📍 Skybar, Marina Bay"); keyword labels usually do
@@ -43,7 +44,7 @@ function namesADay(r: chrono.ParsedResult): boolean {
 function extractDate(
   lines: string[],
   ref: Date
-): { iso: string | null; display: string | null; usedLine: string | null } {
+): { iso: string | null; display: string | null; hasTime: boolean; usedLine: string | null } {
   // A keyword match doesn't guarantee the line actually contains a date ("Valid for
   // dine-in only" matches "valid" but has no date) — try every candidate line in order
   // and use the first one chrono can actually parse, not just the first keyword hit.
@@ -68,9 +69,9 @@ function extractDate(
     results = chrono.parse(lines.join("\n"), ref, { forwardDate: true });
   }
 
-  const date = pickBestDate(results);
-  if (!date) return { iso: null, display: null, usedLine: null };
-  return { iso: date.toISOString(), display: formatDisplay(date), usedLine };
+  const best = pickBestDate(results);
+  if (!best) return { iso: null, display: null, hasTime: false, usedLine: null };
+  return { iso: best.date.toISOString(), display: formatDisplay(best.date, best.hasTime), hasTime: best.hasTime, usedLine };
 }
 
 export function extractEventDetails(text: string, ref = new Date()): ExtractedEvent {
@@ -84,7 +85,7 @@ export function extractEventDetails(text: string, ref = new Date()): ExtractedEv
   const title = titleSource.length > 100 ? titleSource.slice(0, 100) + "…" : titleSource;
 
   const locationMatch = findLocationLine(lines);
-  const { iso: dateIso, display: dateDisplay, usedLine: dateLine } = extractDate(lines, ref);
+  const { iso: dateIso, display: dateDisplay, hasTime: dateHasTime, usedLine: dateLine } = extractDate(lines, ref);
 
   const consumed = new Set([locationMatch?.line, dateLine].filter((l): l is string => Boolean(l)));
   const remaining = lines.slice(1).filter((l) => !consumed.has(l));
@@ -95,5 +96,5 @@ export function extractEventDetails(text: string, ref = new Date()): ExtractedEv
       : descriptionText
     : null;
 
-  return { title, location: locationMatch?.value ?? null, description, dateIso, dateDisplay };
+  return { title, location: locationMatch?.value ?? null, description, dateIso, dateDisplay, dateHasTime };
 }

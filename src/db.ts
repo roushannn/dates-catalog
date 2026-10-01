@@ -31,6 +31,10 @@ const existingColumns = new Set(
 if (!existingColumns.has("description")) {
   db.exec(`ALTER TABLE events ADD COLUMN description TEXT`);
 }
+// Older rows predate this column and show date-only, which is the safe default.
+if (!existingColumns.has("event_has_time")) {
+  db.exec(`ALTER TABLE events ADD COLUMN event_has_time INTEGER NOT NULL DEFAULT 0`);
+}
 if (!existingColumns.has("source_url")) {
   db.exec(`ALTER TABLE events ADD COLUMN source_url TEXT`);
 }
@@ -39,6 +43,7 @@ export function insertEvent(data: {
   title: string;
   event_date: string | null;
   event_date_text: string | null;
+  event_has_time: boolean;
   location: string | null;
   description: string | null;
   source_text: string | null;
@@ -46,10 +51,10 @@ export function insertEvent(data: {
   source_url: string | null;
 }): number {
   const stmt = db.prepare(`
-    INSERT INTO events (title, event_date, event_date_text, location, description, source_text, source_chat, source_url)
-    VALUES (@title, @event_date, @event_date_text, @location, @description, @source_text, @source_chat, @source_url)
+    INSERT INTO events (title, event_date, event_date_text, event_has_time, location, description, source_text, source_chat, source_url)
+    VALUES (@title, @event_date, @event_date_text, @event_has_time, @location, @description, @source_text, @source_chat, @source_url)
   `);
-  const info = stmt.run(data);
+  const info = stmt.run({ ...data, event_has_time: data.event_has_time ? 1 : 0 });
   return Number(info.lastInsertRowid);
 }
 
@@ -59,6 +64,7 @@ export function updateEvent(
     title: string;
     event_date: string | null;
     event_date_text: string | null;
+    event_has_time: boolean;
     location: string | null;
     description: string | null;
   }
@@ -66,9 +72,9 @@ export function updateEvent(
   const info = db
     .prepare(
       `UPDATE events SET title = @title, event_date = @event_date, event_date_text = @event_date_text,
-       location = @location, description = @description WHERE id = @id`
+       event_has_time = @event_has_time, location = @location, description = @description WHERE id = @id`
     )
-    .run({ ...data, id });
+    .run({ ...data, event_has_time: data.event_has_time ? 1 : 0, id });
   return info.changes > 0;
 }
 

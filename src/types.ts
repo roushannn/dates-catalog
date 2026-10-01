@@ -10,6 +10,8 @@ export interface EventRecord {
   title: string;
   event_date: string | null;
   event_date_text: string | null;
+  // SQLite stores booleans as 0/1.
+  event_has_time: number;
   location: string | null;
   description: string | null;
   source_text: string | null;

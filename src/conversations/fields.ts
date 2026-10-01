@@ -67,6 +67,7 @@ export interface FieldDefaults {
   title?: string | null;
   dateIso?: string | null;
   dateDisplay?: string | null;
+  dateHasTime?: boolean;
   location?: string | null;
   description?: string | null;
 }
@@ -75,6 +76,7 @@ export interface CollectedFields {
   title: string;
   dateIso: string | null;
   dateDisplay: string | null;
+  dateHasTime: boolean;
   location: string | null;
   description: string | null;
 }
@@ -93,14 +95,17 @@ export async function collectEventFields(
   });
   let dateIso: string | null = null;
   let dateDisplay: string | null = null;
+  let dateHasTime = false;
   if (dateAnswer) {
     if (defaults.dateDisplay && dateAnswer === defaults.dateDisplay) {
       dateIso = defaults.dateIso ?? null;
       dateDisplay = defaults.dateDisplay;
+      dateHasTime = defaults.dateHasTime ?? false;
     } else {
       const parsed = parseDeadline(dateAnswer);
       dateIso = parsed.iso;
       dateDisplay = parsed.iso ? parsed.display : parsed.display || null;
+      dateHasTime = parsed.hasTime;
     }
   }
 
@@ -110,5 +115,5 @@ export async function collectEventFields(
     defaultValue: defaults.description,
   });
 
-  return { title, dateIso, dateDisplay, location, description };
+  return { title, dateIso, dateDisplay, dateHasTime, location, description };
 }

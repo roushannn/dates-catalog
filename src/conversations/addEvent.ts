@@ -44,6 +44,7 @@ async function saveNewEvent(
     title: data.title,
     event_date: data.dateIso,
     event_date_text: data.dateIso ? null : data.dateDisplay,
+    event_has_time: data.dateIso ? data.dateHasTime : false,
     location: data.location,
     description: data.description,
     source_text: sourceText,
