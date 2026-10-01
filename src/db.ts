@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
 import { EventRecord } from "./types";
+import { atMidnight } from "./utils/dateRange";
 
 const DB_PATH = process.env.DB_PATH || "./data/events.db";
 
@@ -71,7 +72,7 @@ export function updateEvent(
   return info.changes > 0;
 }
 
-// Nearest upcoming deadline first, then events with no usable date, then ones whose date
+// Nearest upcoming deadline first, then events with no usable date, then ones whose day
 // has already passed — otherwise a deal that expired yesterday would sit at #1 forever.
 export function getActiveEvents(now = new Date()): EventRecord[] {
   return db
@@ -80,10 +81,11 @@ export function getActiveEvents(now = new Date()): EventRecord[] {
        ORDER BY CASE WHEN event_date IS NULL THEN 1 WHEN event_date < ? THEN 2 ELSE 0 END,
                 event_date ASC, created_at ASC`
     )
-    .all(now.toISOString()) as EventRecord[];
+    .all(atMidnight(now).toISOString()) as EventRecord[];
 }
 
-// "Passed" matches what the lists mark with ⌛: an active event whose date is before now.
+// "Passed" matches what the lists mark with ⌛: an active event dated before today. Times
+// aren't shown, so a deal "valid until 30 Oct" counts as current for all of 30 Oct.
 export function getPassedEvents(now = new Date()): EventRecord[] {
   return db
     .prepare(
@@ -91,7 +93,7 @@ export function getPassedEvents(now = new Date()): EventRecord[] {
        AND event_date IS NOT NULL AND event_date < ?
        ORDER BY event_date ASC`
     )
-    .all(now.toISOString()) as EventRecord[];
+    .all(atMidnight(now).toISOString()) as EventRecord[];
 }
 
 export function getEventsInRange(startIso: string, endIso: string): EventRecord[] {

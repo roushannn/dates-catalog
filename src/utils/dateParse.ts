@@ -48,7 +48,5 @@ export function formatDisplay(d: Date): string {
     weekday: "short",
     month: "short",
     day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
   });
 }

@@ -1,6 +1,6 @@
 // All range helpers return [start, end) ISO strings in local time, end exclusive.
 
-function atMidnight(d: Date): Date {
+export function atMidnight(d: Date): Date {
   const copy = new Date(d);
   copy.setHours(0, 0, 0, 0);
   return copy;
