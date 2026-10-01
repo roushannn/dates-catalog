@@ -30,6 +30,9 @@ const existingColumns = new Set(
 if (!existingColumns.has("description")) {
   db.exec(`ALTER TABLE events ADD COLUMN description TEXT`);
 }
+if (!existingColumns.has("source_url")) {
+  db.exec(`ALTER TABLE events ADD COLUMN source_url TEXT`);
+}
 
 export function insertEvent(data: {
   title: string;
@@ -39,10 +42,11 @@ export function insertEvent(data: {
   description: string | null;
   source_text: string | null;
   source_chat: string | null;
+  source_url: string | null;
 }): number {
   const stmt = db.prepare(`
-    INSERT INTO events (title, event_date, event_date_text, location, description, source_text, source_chat)
-    VALUES (@title, @event_date, @event_date_text, @location, @description, @source_text, @source_chat)
+    INSERT INTO events (title, event_date, event_date_text, location, description, source_text, source_chat, source_url)
+    VALUES (@title, @event_date, @event_date_text, @location, @description, @source_text, @source_chat, @source_url)
   `);
   const info = stmt.run(data);
   return Number(info.lastInsertRowid);

@@ -4,11 +4,26 @@ import { MyContext } from "../types";
 import { currentWeekRange, upcomingWeekendRange } from "../utils/dateRange";
 import { formatEventList } from "../utils/format";
 
+// Shown in Telegram's command menu (the "/" popup and the Menu button).
+export const COMMAND_MENU = [
+  { command: "add", description: "Add an event or offer manually" },
+  { command: "week", description: "Everything happening this week" },
+  { command: "weekend", description: "Everything happening this (or next) weekend" },
+  { command: "list", description: "All upcoming events, unfiltered" },
+  { command: "edit", description: "Edit an event: /edit <id>" },
+  { command: "done", description: "Mark an event done: /done <id>" },
+  { command: "delete", description: "Delete an event: /delete <id>" },
+  { command: "cancel", description: "Abort whatever you're in the middle of" },
+  { command: "help", description: "How to use this bot" },
+];
+
 export async function cmdStart(ctx: MyContext) {
   await ctx.reply(
     "Hi! I keep track of events and offers for date nights and weekends.\n\n" +
       "• Forward me a message from a channel/chat and I'll try to pick out the title, date, " +
       "and location, then ask you to confirm or edit them.\n" +
+      "• Share an Instagram post to me (Share → Telegram, or paste the link) and I'll do the " +
+      "same with its caption.\n" +
       "• Or use /add to log one manually.\n" +
       "• /week — everything happening this week\n" +
       "• /weekend — everything happening this (or next) weekend\n" +

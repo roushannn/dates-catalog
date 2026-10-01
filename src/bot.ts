@@ -3,6 +3,7 @@ import { Bot } from "grammy";
 import { addEvent } from "./conversations/addEvent";
 import { editEvent } from "./conversations/editEvent";
 import { isForwardedMessage, onForward } from "./handlers/forward";
+import { getInstagramUrl, onInstagramLink } from "./handlers/instagram";
 import {
   cmdAdd,
   cmdCancel,
@@ -58,13 +59,22 @@ bot.command("delete", cmdDelete);
 
 bot.on("callback_query:data", onCallbackQuery);
 
-// Forwarded messages (outside of an active conversation) kick off the add flow automatically.
+// Forwarded messages and Instagram links (outside of an active conversation) kick off the
+// add flow automatically. A forward's own text beats a link inside it, so forwards go first.
 bot.on("message", async (ctx) => {
   if (isForwardedMessage(ctx)) {
     await onForward(ctx);
     return;
   }
-  await ctx.reply("Forward me something to log it, or use /add. Send /help for the full list of commands.");
+  const instagramUrl = getInstagramUrl(ctx);
+  if (instagramUrl) {
+    await onInstagramLink(ctx, instagramUrl);
+    return;
+  }
+  await ctx.reply(
+    "Forward me something or share an Instagram post to log it, or use /add. " +
+      "Send /help for the full list of commands."
+  );
 });
 
 bot.catch((err) => {

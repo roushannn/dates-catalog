@@ -31,6 +31,12 @@ function findLocationLine(lines: string[]): { line: string; value: string } | nu
   return null;
 }
 
+function namesADay(r: chrono.ParsedResult): boolean {
+  return [r.start, r.end].some(
+    (c) => c && (c.isCertain("day") || c.isCertain("weekday"))
+  );
+}
+
 // The title line is excluded from the general scan: words like "night" or "today" in a
 // title can bleed into chrono's parsing of the following line and throw off the result.
 // It's only consulted as a last resort, when nothing elsewhere in the message parses.
@@ -43,9 +49,11 @@ function extractDate(
   // and use the first one chrono can actually parse, not just the first keyword hit.
   let results: chrono.ParsedResult[] = [];
   let usedLine: string | null = null;
+  // The line must also name a day: "Free flow till 11pm" is a time, not a deadline, and
+  // would otherwise beat the real date on another line ("This Saturday 8pm").
   for (const line of lines.filter((l) => DEADLINE_KEYWORD_PATTERN.test(l))) {
     const r = chrono.parse(line, ref, { forwardDate: true });
-    if (r.length > 0) {
+    if (r.some(namesADay)) {
       results = r;
       usedLine = line;
       break;

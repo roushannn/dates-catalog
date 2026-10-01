@@ -14,6 +14,7 @@ export interface EventRecord {
   description: string | null;
   source_text: string | null;
   source_chat: string | null;
+  source_url: string | null;
   status: "active" | "done";
   created_at: string;
 }

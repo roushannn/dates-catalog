@@ -11,6 +11,7 @@ export function formatEventLine(e: EventRecord): string {
   if (e.location) parts.push(`📍 ${e.location}`);
   if (e.description) parts.push(`📝 ${e.description}`);
   if (e.source_chat) parts.push(`↪️ from ${e.source_chat}`);
+  if (e.source_url) parts.push(`🔗 ${e.source_url}`);
   return parts.join("\n");
 }
 

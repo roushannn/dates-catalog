@@ -26,11 +26,19 @@ function summaryText(title: string, dateDisplay: string | null, location: string
   return parts.join("\n");
 }
 
+/** Pre-fetched source passed in by a handler, e.g. an Instagram post's caption. */
+export interface AddEventSource {
+  text: string | null;
+  chat: string | null;
+  url: string | null;
+}
+
 async function saveNewEvent(
   ctx: MyConversationContext,
   data: CollectedFields,
   sourceText: string | null,
-  sourceChat: string | null
+  sourceChat: string | null,
+  sourceUrl: string | null = null
 ) {
   const id = insertEvent({
     title: data.title,
@@ -40,6 +48,7 @@ async function saveNewEvent(
     description: data.description,
     source_text: sourceText,
     source_chat: sourceChat,
+    source_url: sourceUrl,
   });
 
   const whenSummary = data.dateIso
@@ -57,16 +66,23 @@ async function saveNewEvent(
   );
 }
 
-export async function addEvent(conversation: MyConversation, ctx: MyConversationContext) {
+export async function addEvent(
+  conversation: MyConversation,
+  ctx: MyConversationContext,
+  source?: AddEventSource
+) {
   const triggerMsg = ctx.message;
-  const sourceText = triggerMsg?.text ?? triggerMsg?.caption ?? null;
-  const sourceChat = extractForwardOrigin(triggerMsg);
+  const sourceText = source ? source.text : triggerMsg?.text ?? triggerMsg?.caption ?? null;
+  const sourceChat = source ? source.chat : extractForwardOrigin(triggerMsg);
+  const sourceUrl = source?.url ?? null;
   const isForward =
-    Boolean(sourceText) && Boolean((triggerMsg as any)?.forward_origin || (triggerMsg as any)?.forward_date);
+    Boolean(sourceText) &&
+    (Boolean(source) || Boolean((triggerMsg as any)?.forward_origin || (triggerMsg as any)?.forward_date));
 
   if (isForward && sourceText) {
     const preview = sourceText.length > 300 ? sourceText.slice(0, 300) + "…" : sourceText;
-    await ctx.reply(`Got a forwarded message${sourceChat ? ` from ${sourceChat}` : ""}:\n\n${preview}`);
+    const label = source ? "Got this post" : "Got a forwarded message";
+    await ctx.reply(`${label}${sourceChat ? ` from ${sourceChat}` : ""}:\n\n${preview}`);
 
     const extracted = extractEventDetails(sourceText);
     await ctx.reply(
@@ -88,7 +104,7 @@ export async function addEvent(conversation: MyConversation, ctx: MyConversation
     await response.answerCallbackQuery();
 
     if (response.callbackQuery.data === "add_confirm_save") {
-      await saveNewEvent(ctx, extracted, sourceText, sourceChat);
+      await saveNewEvent(ctx, extracted, sourceText, sourceChat, sourceUrl);
       return;
     }
 
@@ -97,15 +113,15 @@ export async function addEvent(conversation: MyConversation, ctx: MyConversation
       await ctx.reply("Title can't be empty. Cancelled — send /add or forward the message again to retry.");
       return;
     }
-    await saveNewEvent(ctx, collected, sourceText, sourceChat);
+    await saveNewEvent(ctx, collected, sourceText, sourceChat, sourceUrl);
     return;
   }
 
-  await ctx.reply("Let's add a new event/offer.");
+  if (!sourceUrl) await ctx.reply("Let's add a new event/offer.");
   const collected = await collectEventFields(conversation, ctx, {});
   if (!collected.title) {
     await ctx.reply("Title can't be empty. Cancelled — send /add to try again.");
     return;
   }
-  await saveNewEvent(ctx, collected, null, null);
+  await saveNewEvent(ctx, collected, null, sourceChat, sourceUrl);
 }
