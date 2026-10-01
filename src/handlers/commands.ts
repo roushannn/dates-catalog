@@ -1,5 +1,5 @@
 import { InlineKeyboard } from "grammy";
-import { deleteEvent, getActiveEvents, getEvent, getEventsInRange, markDone } from "../db";
+import { deleteEvent, getActiveEvents, getEvent, getEventsInRange, getPassedEvents, markDone } from "../db";
 import { EventRecord, MyContext } from "../types";
 import { currentWeekRange, upcomingWeekendRange } from "../utils/dateRange";
 import { formatEventList } from "../utils/format";
@@ -13,6 +13,7 @@ export const COMMAND_MENU = [
   { command: "edit", description: "Edit an event: /edit <number>" },
   { command: "done", description: "Mark an event done: /done <number>" },
   { command: "delete", description: "Delete an event: /delete <number>" },
+  { command: "cleanup", description: "Delete events whose date has passed" },
   { command: "cancel", description: "Abort whatever you're in the middle of" },
   { command: "help", description: "How to use this bot" },
 ];
@@ -31,6 +32,7 @@ export async function cmdStart(ctx: MyContext) {
       "• /edit <number> — change an event's details\n" +
       "• /done <number> and /delete <number> also work as commands\n" +
       "  (the number is from the last list I showed you)\n" +
+      "• /cleanup — delete events whose date has passed\n" +
       "• /cancel — abort whatever you're in the middle of"
   );
 }
@@ -132,10 +134,40 @@ export async function cmdDelete(ctx: MyContext) {
   await ctx.reply(`🗑 Deleted "${event.title}".`);
 }
 
+export async function cmdCleanup(ctx: MyContext) {
+  const passed = getPassedEvents();
+  if (passed.length === 0) {
+    await ctx.reply("Nothing has passed yet — no events to clean up.");
+    return;
+  }
+  const titles = passed.map((e) => `• ${e.title}`).join("\n");
+  await ctx.reply(`Delete these ${passed.length} passed event(s)?\n\n${titles}`, {
+    reply_markup: new InlineKeyboard().text("🗑 Delete them", "cleanup:confirm").text("Keep", "cleanup:cancel"),
+  });
+}
+
+async function onCleanupCallback(ctx: MyContext, choice: string) {
+  if (choice !== "confirm") {
+    await ctx.answerCallbackQuery({ text: "Kept." });
+    await ctx.editMessageReplyMarkup();
+    return;
+  }
+  // Re-read at confirm time so a stale button can't delete something that's since been edited.
+  const passed = getPassedEvents();
+  for (const e of passed) deleteEvent(e.id);
+  await ctx.answerCallbackQuery({ text: `Deleted ${passed.length}.` });
+  await ctx.editMessageReplyMarkup();
+  await ctx.reply(passed.length ? `🗑 Deleted ${passed.length} passed event(s).` : "Nothing left to clean up.");
+}
+
 export async function onCallbackQuery(ctx: MyContext) {
   const data = ctx.callbackQuery?.data;
   if (!data) return;
   const [action, idStr] = data.split(":");
+  if (action === "cleanup") {
+    await onCleanupCallback(ctx, idStr);
+    return;
+  }
   const id = Number(idStr);
   const event = getEvent(id);
   if (!event) {

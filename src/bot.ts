@@ -7,6 +7,7 @@ import { getInstagramUrl, onInstagramLink } from "./handlers/instagram";
 import {
   cmdAdd,
   cmdCancel,
+  cmdCleanup,
   cmdDelete,
   cmdDone,
   cmdEdit,
@@ -49,6 +50,7 @@ bot.use(createConversation(editEvent, "editEvent"));
 bot.command("start", cmdStart);
 bot.command("help", cmdStart);
 bot.command("add", cmdAdd);
+bot.command("cleanup", cmdCleanup);
 bot.command("cancel", cmdCancel);
 bot.command("week", cmdWeek);
 bot.command("weekend", cmdWeekend);

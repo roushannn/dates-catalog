@@ -83,6 +83,17 @@ export function getActiveEvents(now = new Date()): EventRecord[] {
     .all(now.toISOString()) as EventRecord[];
 }
 
+// "Passed" matches what the lists mark with ⌛: an active event whose date is before now.
+export function getPassedEvents(now = new Date()): EventRecord[] {
+  return db
+    .prepare(
+      `SELECT * FROM events WHERE status = 'active'
+       AND event_date IS NOT NULL AND event_date < ?
+       ORDER BY event_date ASC`
+    )
+    .all(now.toISOString()) as EventRecord[];
+}
+
 export function getEventsInRange(startIso: string, endIso: string): EventRecord[] {
   return db
     .prepare(
