@@ -2,7 +2,7 @@ import { InlineKeyboard } from "grammy";
 import { deleteEvent, getActiveEvents, getEvent, getEventsInRange, getPassedEvents, markDone } from "../db";
 import { EventRecord, MyContext } from "../types";
 import { currentWeekRange, upcomingWeekendRange } from "../utils/dateRange";
-import { formatEventList } from "../utils/format";
+import { formatEventLine, formatEventList } from "../utils/format";
 
 // Shown in Telegram's command menu (the "/" popup and the Menu button).
 export const COMMAND_MENU = [
@@ -71,14 +71,28 @@ export async function cmdList(ctx: MyContext) {
   await showList(ctx, getActiveEvents(), "No saved events/offers yet. Forward me something or use /add.");
 }
 
+const BUTTONS_PER_ROW = 5;
+
+// One small numbered button per event keeps long lists manageable; tapping it opens that
+// event's own Edit / Done / Delete buttons (see "pick" in onCallbackQuery).
 async function sendButtonsFor(ctx: MyContext, events: EventRecord[]) {
   if (events.length === 0) return;
   const keyboard = new InlineKeyboard();
   events.forEach((e, i) => {
     const n = i + 1;
-    keyboard.text(`✏️ ${n}`, `edit:${e.id}`).text(`✅ ${n} done`, `done:${e.id}`).text(`🗑 ${n}`, `del:${e.id}`).row();
+    keyboard.text(String(n), `pick:${e.id}:${n}`);
+    if (n % BUTTONS_PER_ROW === 0) keyboard.row();
   });
-  await ctx.reply("Edit, mark done, or delete:", { reply_markup: keyboard });
+  await ctx.reply("Tap a number to edit, mark done, or delete it:", { reply_markup: keyboard });
+}
+
+async function showEventActions(ctx: MyContext, event: EventRecord, position: number) {
+  await ctx.reply(formatEventLine(event, position), {
+    reply_markup: new InlineKeyboard()
+      .text("✏️ Edit", `edit:${event.id}`)
+      .text("✅ Done", `done:${event.id}`)
+      .text("🗑 Delete", `del:${event.id}`),
+  });
 }
 
 /** Resolves "/done 2" to the event shown as number 2 in this chat's last list. */
@@ -163,7 +177,7 @@ async function onCleanupCallback(ctx: MyContext, choice: string) {
 export async function onCallbackQuery(ctx: MyContext) {
   const data = ctx.callbackQuery?.data;
   if (!data) return;
-  const [action, idStr] = data.split(":");
+  const [action, idStr, positionStr] = data.split(":");
   if (action === "cleanup") {
     await onCleanupCallback(ctx, idStr);
     return;
@@ -174,7 +188,10 @@ export async function onCallbackQuery(ctx: MyContext) {
     await ctx.answerCallbackQuery({ text: "That event no longer exists." });
     return;
   }
-  if (action === "done") {
+  if (action === "pick") {
+    await ctx.answerCallbackQuery();
+    await showEventActions(ctx, event, Number(positionStr));
+  } else if (action === "done") {
     markDone(id);
     await ctx.answerCallbackQuery({ text: "Marked done." });
     await ctx.reply(`✅ Marked "${event.title}" as done.`);
