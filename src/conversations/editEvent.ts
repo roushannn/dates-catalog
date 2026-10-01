@@ -6,11 +6,11 @@ import { collectEventFields } from "./fields";
 export async function editEvent(conversation: MyConversation, ctx: MyConversationContext, eventId: number) {
   const existing = getEvent(eventId);
   if (!existing) {
-    await ctx.reply(`Couldn't find event #${eventId}. It may have already been deleted.`);
+    await ctx.reply(`Couldn't find that event. It may have already been deleted.`);
     return;
   }
 
-  await ctx.reply(`Editing #${eventId}: ${existing.title}\n(reply "keep"/tap the button to leave a field as-is)`);
+  await ctx.reply(`Editing: ${existing.title}\n(reply "keep"/tap the button to leave a field as-is)`);
 
   const collected = await collectEventFields(conversation, ctx, {
     title: existing.title,
@@ -44,6 +44,6 @@ export async function editEvent(conversation: MyConversation, ctx: MyConversatio
   if (collected.description) extra.push(`📝 ${collected.description}`);
 
   await ctx.reply(
-    `Updated ✅ #${eventId} ${collected.title}\n🗓 ${whenSummary}${extra.length ? "\n" + extra.join("\n") : ""}`
+    `Updated ✅ ${collected.title}\n🗓 ${whenSummary}${extra.length ? "\n" + extra.join("\n") : ""}`
   );
 }

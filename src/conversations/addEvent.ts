@@ -40,7 +40,7 @@ async function saveNewEvent(
   sourceChat: string | null,
   sourceUrl: string | null = null
 ) {
-  const id = insertEvent({
+  insertEvent({
     title: data.title,
     event_date: data.dateIso,
     event_date_text: data.dateIso ? null : data.dateDisplay,
@@ -62,7 +62,7 @@ async function saveNewEvent(
   if (data.description) extra.push(`📝 ${data.description}`);
 
   await ctx.reply(
-    `Saved ✅ #${id} ${data.title}\n🗓 ${whenSummary}${extra.length ? "\n" + extra.join("\n") : ""}`
+    `Saved ✅ ${data.title}\n🗓 ${whenSummary}${extra.length ? "\n" + extra.join("\n") : ""}`
   );
 }
 

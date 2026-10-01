@@ -71,13 +71,16 @@ export function updateEvent(
   return info.changes > 0;
 }
 
-export function getActiveEvents(): EventRecord[] {
+// Nearest upcoming deadline first, then events with no usable date, then ones whose date
+// has already passed — otherwise a deal that expired yesterday would sit at #1 forever.
+export function getActiveEvents(now = new Date()): EventRecord[] {
   return db
     .prepare(
       `SELECT * FROM events WHERE status = 'active'
-       ORDER BY (event_date IS NULL), event_date ASC, created_at ASC`
+       ORDER BY CASE WHEN event_date IS NULL THEN 1 WHEN event_date < ? THEN 2 ELSE 0 END,
+                event_date ASC, created_at ASC`
     )
-    .all() as EventRecord[];
+    .all(now.toISOString()) as EventRecord[];
 }
 
 export function getEventsInRange(startIso: string, endIso: string): EventRecord[] {
